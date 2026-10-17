@@ -1,0 +1,13 @@
+[tasks.format]
+description = "auto-fix formatting"
+run = """
+cargo fmt
+"""
+
+[tasks.check]
+description = "run all linting and tests"
+run = """
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+cargo test
+"""

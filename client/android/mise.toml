@@ -1,0 +1,5 @@
+[tasks.check]
+description = "run android lint and unit tests"
+run = """
+./gradlew check
+"""
