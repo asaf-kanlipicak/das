@@ -1,0 +1,16 @@
+[tools]
+node = "24.21.0"
+pnpm = "12.6.0"
+
+[tasks.format]
+description = "auto-fix formatting and linting"
+run = """
+pnpm fix
+"""
+
+[tasks.check]
+description = "run all linting and type checks"
+run = """
+pnpm lint
+pnpm build
+"""
