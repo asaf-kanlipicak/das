@@ -13,4 +13,5 @@ description = "run all linting and type checks"
 run = """
 pnpm lint
 pnpm build
+pnpm i18n:check
 """
