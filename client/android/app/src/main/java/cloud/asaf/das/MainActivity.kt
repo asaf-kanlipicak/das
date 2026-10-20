@@ -1,17 +1,24 @@
 package cloud.asaf.das
 
+import android.Manifest.permission.ACCESS_LOCAL_NETWORK
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.lifecycleScope
 import cloud.asaf.das.ui.theme.DASTheme
 import kotlinx.coroutines.withContext
@@ -23,41 +30,56 @@ import java.net.DatagramSocket
 import java.net.InetAddress
 
 class MainActivity : ComponentActivity() {
+    private val status = mutableStateOf("")
+
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {granted ->
+        if (granted) sendPacket() else status.value = "Permission denied"
+    }
+
+    private fun ensurePermission() {
+        if (Build.VERSION.SDK_INT >= 37 &&
+            checkSelfPermission(this, ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_DENIED
+        ) {
+            permissionLauncher.launch(ACCESS_LOCAL_NETWORK)
+        }
+        else {
+            sendPacket()
+        }
+    }
+
+    private fun sendPacket (){
+        status.value = "Sending..."
+        lifecycleScope.launch {
+            val result = sendUdpPacket("10.0.2.2", 7777, "hello from android")
+            status.value = result.fold({ "Success" }, { e -> "Failed: ${e.message}"})
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             DASTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Button(onClick = {
+                            ensurePermission()
+                        }) {
+                            Text("Send UDP packet")
+                        }
+                        Text(status.value)
+                    }
                 }
             }
         }
-        lifecycleScope.launch {
-            val result = sendUdpPacket("127.0.0.1", 7777, "android")
-            result
-                .onSuccess { Log.i("UDP", "Send succeeded") }
-                .onFailure { e -> Log.e("UDP","Send failed",e) }
-        }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    DASTheme {
-        Greeting("Android")
     }
 }
 
