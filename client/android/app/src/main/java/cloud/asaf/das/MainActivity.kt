@@ -21,39 +21,40 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat.checkSelfPermission
 import androidx.lifecycle.lifecycleScope
 import cloud.asaf.das.ui.theme.DASTheme
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.io.IOException
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     private val status = mutableStateOf("")
 
-    private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) {granted ->
-        if (granted) sendPacket() else status.value = "Permission denied"
-    }
+    private val permissionLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            if (granted) sendPacket() else status.value = "Permission denied"
+        }
 
     private fun ensurePermission() {
-        if (Build.VERSION.SDK_INT >= 37 &&
-            checkSelfPermission(this, ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_DENIED
+        if (
+            Build.VERSION.SDK_INT >= 37 &&
+                checkSelfPermission(this, ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_DENIED
         ) {
             permissionLauncher.launch(ACCESS_LOCAL_NETWORK)
-        }
-        else {
+        } else {
             sendPacket()
         }
     }
 
-    private fun sendPacket (){
+    private fun sendPacket() {
         status.value = "Sending..."
         lifecycleScope.launch {
             val result = sendUdpPacket("10.0.2.2", 7777, "hello from android")
-            status.value = result.fold({ "Success" }, { e -> "Failed: ${e.message}"})
+            status.value = result.fold({ "Success" }, { e -> "Failed: ${e.message}" })
         }
     }
 
@@ -64,15 +65,15 @@ class MainActivity : ComponentActivity() {
             DASTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
+                        modifier = Modifier.fillMaxSize().padding(innerPadding),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
                     ) {
-                        Button(onClick = {
-                            ensurePermission()
-                        }) {
+                        Button(
+                            onClick = {
+                                ensurePermission()
+                            },
+                        ) {
                             Text("Send UDP packet")
                         }
                         Text(status.value)
@@ -86,24 +87,23 @@ class MainActivity : ComponentActivity() {
 suspend fun sendUdpPacket(
     targetIp: String,
     targetPort: Int,
-    message: String
-): Result<Unit> = withContext(Dispatchers.IO){
-    try{
-        DatagramSocket().use { socket ->
-            val data = message.toByteArray()
-            socket.send(
-                DatagramPacket(
-                    data,
-                    data.size,
-                    InetAddress.getByName(targetIp),
-                    targetPort
+    message: String,
+): Result<Unit> =
+    withContext(Dispatchers.IO) {
+        try {
+            DatagramSocket().use { socket ->
+                val data = message.toByteArray()
+                socket.send(
+                    DatagramPacket(
+                        data,
+                        data.size,
+                        InetAddress.getByName(targetIp),
+                        targetPort,
+                    ),
                 )
-            )
+            }
+            Result.success(Unit)
+        } catch (e: IOException) {
+            Result.failure(e)
         }
-        Result.success(Unit)
     }
-    catch (e: IOException){
-        Result.failure(e)
-    }
-
-}

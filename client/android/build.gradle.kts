@@ -2,4 +2,14 @@
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.compose) apply false
+    alias(libs.plugins.spotless)
+}
+
+spotless {
+    ratchetFrom = "origin/main"
+    kotlin {
+        target("**/*.kt", "**/*.kts")
+        targetExclude("**/build/**")
+        ktfmt(libs.versions.ktfmt.get()).kotlinlangStyle()
+    }
 }

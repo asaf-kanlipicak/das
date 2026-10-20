@@ -1,3 +1,9 @@
+[tasks.format]
+description = "auto-fix formatting"
+run = """
+./gradlew spotlessApply
+"""
+
 [tasks.check]
 description = "run android lint and unit tests"
 run = """
